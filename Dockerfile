@@ -13,5 +13,14 @@ RUN dotnet publish -c Release -o out
 # Build runtime image
 FROM mcr.microsoft.com/dotnet/core/aspnet:2.2
 WORKDIR /app
+
+# Run as a non-root user
+RUN groupadd -r app && \
+    useradd -r -g app -d /home/app -s /sbin/nologin -c "Docker image user" app
+RUN chown -R app:app /app
+USER app
+
 COPY --from=build-env /app/src/HelloHeroku/out .
-ENTRYPOINT ["dotnet", "HelloHeroku.dll"]
+
+# Listen on the port provided by the docker container runtime
+CMD dotnet HelloHeroku.dll --urls=http://*:$PORT
